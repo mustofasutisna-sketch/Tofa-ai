@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Mustofa AI Ultra</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(135deg,#0f172a,#1e3a8a);
+color:white;
+text-align:center;
+}
+
+/* LOGIN */
+
+#loginPage{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:#020617;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+z-index:999;
+}
+
+#loginPage input{
+padding:10px;
+margin:5px;
+border-radius:6px;
+border:none;
+}
+
+/* NAVBAR */
+
+#navbar{
+background:#020617;
+display:flex;
+justify-content:center;
+gap:10px;
+padding:10px;
+position:sticky;
+top:0;
+}
+
+.navBtn{
+background:#1e293b;
+border:none;
+color:white;
+padding:8px 16px;
+border-radius:6px;
+cursor:pointer;
+}
+
+/* SECTION */
+
+.section{
+display:none;
+padding:20px;
+}
+
+#chatSection{
+display:block;
+}
+
+/* CHAT */
+
+#chatbox{
+width:90%;
+max-width:700px;
+height:300px;
+overflow-y:auto;
+background:#1e293b;
+margin:auto;
+padding:10px;
+border-radius:10px;
+}
+
+.user{text-align:right;color:#60a5fa;margin:5px;}
+.ai{text-align:left;margin:5px;}
+
+/* GAME */
+
+#gameBoard{
+display:grid;
+grid-template-columns:repeat(3,90px);
+gap:5px;
+justify-content:center;
+margin:auto;
+}
+
+.cell{
+width:90px;
+height:90px;
+background:#1e293b;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:35px;
+cursor:pointer;
+}
+
+/* COMMUNITY */
+
+.post{
+background:#1e293b;
+padding:10px;
+margin:10px;
+border-radius:8px;
+text-align:left;
+}
+
+.profile{
+width:40px;
+height:40px;
+border-radius:50%;
+vertical-align:middle;
+}
+
+img.postImg{
+max-width:200px;
+border-radius:6px;
+margin-top:5px;
+}
+
+button{
+padding:7px 12px;
+border:none;
+border-radius:6px;
+background:#3b82f6;
+color:white;
+cursor:pointer;
+margin:5px;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+
+<div id="loginPage">
+
+<h2>Login Mustofa AI</h2>
+
+<input id="nameInput" placeholder="Nama">
+
+<input id="birthPlaceInput" placeholder="Tempat Lahir">
+
+<input type="date" id="birthDateInput">
+
+<input type="file" id="profilePhoto">
+
+<button onclick="login()">Masuk</button>
+
+</div>
+
+<h2>🤖 Mustofa AI Ultra</h2>
+
+<!-- NAVBAR -->
+
+<div id="navbar">
+
+<button class="navBtn" onclick="showSection('chatSection')">💬 Chat AI</button>
+
+<button class="navBtn" onclick="showSection('gameSection')">🎮 Game</button>
+
+<button class="navBtn" onclick="showSection('communitySection')">🌍 Komunitas</button>
+
+<button class="navBtn" onclick="showSection('profileSection')">👤 Profil</button>
+
+</div>
+
+<!-- CHAT -->
+
+<div id="chatSection" class="section">
+
+<div id="chatbox"></div>
+
+<input id="userInput" placeholder="Ngobrol dengan AI">
+
+<button onclick="send()">Kirim</button>
+
+</div>
+
+<!-- GAME -->
+
+<div id="gameSection" class="section">
+
+<h3>Tic Tac Toe</h3>
+
+<div id="gameBoard"></div>
+
+<h3>Tebak Angka</h3>
+
+<input id="guessInput">
+
+<button onclick="guessNumber()">Tebak</button>
+
+<p id="guessResult"></p>
+
+</div>
+
+<!-- COMMUNITY -->
+
+<div id="communitySection" class="section">
+
+<h3>Komunitas</h3>
+
+<div id="posts"></div>
+
+<input id="postInput" placeholder="Tulis sesuatu">
+
+<input type="file" id="photoInput">
+
+<button onclick="postStory()">Posting</button>
+
+</div>
+
+<!-- PROFILE -->
+
+<div id="profileSection" class="section">
+
+<h3>Profil Saya</h3>
+
+<img id="profilePreview" class="profile">
+
+<p id="profileName"></p>
+
+<p id="profileBirth"></p>
+
+<input type="file" id="editPhoto">
+
+<button onclick="updatePhoto()">Update Foto</button>
+
+</div>
+
+<script>
+
+/* LOGIN */
+
+let user=JSON.parse(localStorage.getItem("user"));
+
+if(user){
+document.getElementById("loginPage").style.display="none";
+loadProfile();
+}
+
+function login(){
+
+let name=document.getElementById("nameInput").value;
+let place=document.getElementById("birthPlaceInput").value;
+let date=document.getElementById("birthDateInput").value;
+let photo=document.getElementById("profilePhoto").files[0];
+
+if(!name||!place||!date){
+alert("Isi semua data");
+return;
+}
+
+let reader=new FileReader();
+
+reader.onload=function(){
+
+user={
+name:name,
+place:place,
+date:date,
+photo:reader.result
+};
+
+localStorage.setItem("user",JSON.stringify(user));
+
+document.getElementById("loginPage").style.display="none";
+
+loadProfile();
+
+};
+
+if(photo){
+reader.readAsDataURL(photo);
+}else{
+reader.onload();
+}
+
+}
+
+/* PROFILE */
+
+function loadProfile(){
+
+document.getElementById("profilePreview").src=user.photo;
+document.getElementById("profileName").innerText="Nama: "+user.name;
+document.getElementById("profileBirth").innerText="Lahir: "+user.place+" "+user.date;
+
+}
+
+function updatePhoto(){
+
+let photo=document.getElementById("editPhoto").files[0];
+
+let reader=new FileReader();
+
+reader.onload=function(){
+
+user.photo=reader.result;
+
+localStorage.setItem("user",JSON.stringify(user));
+
+loadProfile();
+
+};
+
+reader.readAsDataURL(photo);
+
+}
+
+/* NAVIGATION */
+
+function showSection(id){
+
+document.querySelectorAll(".section").forEach(sec=>sec.style.display="none");
+
+document.getElementById(id).style.display="block";
+
+}
+
+/* AI CHAT */
+
+let responses=[
+"Menarik sekali!",
+"Ceritakan lebih lanjut.",
+"Itu ide bagus.",
+"Aku belum tahu tentang itu.",
+"Apa yang terjadi selanjutnya?",
+"Wah keren.",
+"Aku penasaran.",
+"Kedengarannya menarik."
+];
+
+function send(){
+
+let input=document.getElementById("userInput").value;
+
+if(!input) return;
+
+document.getElementById("userInput").value="";
+
+let chatbox=document.getElementById("chatbox");
+
+chatbox.innerHTML+=`<div class="user">${input}</div>`;
+
+let lower=input.toLowerCase();
+
+let reply="";
+
+let math=input.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)/);
+
+if(math){
+
+let a=parseFloat(math[1]);
+let b=parseFloat(math[3]);
+let op=math[2];
+
+if(op=="+")reply=a+b;
+if(op=="-")reply=a-b;
+if(op=="*")reply=a*b;
+if(op=="/")reply=a/b;
+
+reply="Hasilnya "+reply;
+
+}
+
+else if(lower.includes("halo")){
+reply="Halo "+user.name+"!";
+}
+
+else{
+
+reply=responses[Math.floor(Math.random()*responses.length)];
+
+}
+
+chatbox.innerHTML+=`<div class="ai">${reply}</div>`;
+
+chatbox.scrollTop=chatbox.scrollHeight;
+
+}
+
+/* GAME TIC TAC TOE */
+
+let board=["","","","","","","","",""];
+
+let game=document.getElementById("gameBoard");
+
+function drawBoard(){
+
+game.innerHTML="";
+
+board.forEach((cell,i)=>{
+
+let div=document.createElement("div");
+
+div.className="cell";
+
+div.innerText=cell;
+
+div.onclick=()=>move(i);
+
+game.appendChild(div);
+
+});
+
+}
+
+function move(i){
+
+if(board[i]!="")return;
+
+board[i]="X";
+
+aiMove();
+
+drawBoard();
+
+}
+
+function aiMove(){
+
+let empty=board.map((v,i)=>v==""?i:null).filter(v=>v!=null);
+
+if(empty.length==0)return;
+
+board[empty[Math.floor(Math.random()*empty.length)]]="O";
+
+}
+
+drawBoard();
+
+/* GAME TEBAK ANGKA */
+
+let randomNumber=Math.floor(Math.random()*100)+1;
+
+function guessNumber(){
+
+let guess=parseInt(document.getElementById("guessInput").value);
+
+let result=document.getElementById("guessResult");
+
+if(guess>randomNumber) result.innerText="Terlalu besar";
+
+else if(guess<randomNumber) result.innerText="Terlalu kecil";
+
+else result.innerText="Benar 🎉";
+
+}
+
+/* COMMUNITY */
+
+let posts=JSON.parse(localStorage.getItem("posts"))||[];
+
+function savePosts(){
+localStorage.setItem("posts",JSON.stringify(posts));
+}
+
+function renderPosts(){
+
+let container=document.getElementById("posts");
+
+container.innerHTML="";
+
+posts.forEach((post,i)=>{
+
+container.innerHTML+=`
+
+<div class="post">
+
+<img src="${post.photo}" class="profile">
+
+<b>${post.user}</b>
+
+<p>${post.text}</p>
+
+${post.img?`<img src="${post.img}" class="postImg">`:""}
+
+<p>❤️ ${post.likes}</p>
+
+<button onclick="likePost(${i})">Like</button>
+
+</div>
+
+`;
+
+});
+
+}
+
+function postStory(){
+
+let text=document.getElementById("postInput").value;
+
+let photo=document.getElementById("photoInput").files[0];
+
+if(!text&&!photo)return;
+
+let reader=new FileReader();
+
+reader.onload=function(){
+
+posts.unshift({
+
+user:user.name,
+photo:user.photo,
+text:text,
+img:reader.result||null,
+likes:0
+
+});
+
+savePosts();
+renderPosts();
+
+};
+
+if(photo)reader.readAsDataURL(photo);
+else reader.onload();
+
+}
+
+function likePost(i){
+
+posts[i].likes++;
+
+savePosts();
+
+renderPosts();
+
+}
+
+renderPosts();
+
+</script>
+
+</body>
+</html>
