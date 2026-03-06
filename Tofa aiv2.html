@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tofa AI - Complete Edition</title>
+    <style>
+        :root { --primary: #1e3a8a; --accent: #3b82f6; --bg: #0ea5e9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; overflow: hidden; }
+        
+        /* LOGIN */
+        #login-page { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .login-card { background: white; padding: 2.5rem; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); width: 85%; max-width: 320px; text-align: center; }
+
+        /* APP LAYOUT */
+        #main-app { display: none; flex-direction: column; height: 100vh; }
+        header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .content-area { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 180px; }
+        .page { display: none; max-width: 600px; margin: 0 auto; }
+        .active-page { display: block; }
+
+        /* AI CHAT STYLES */
+        .chat-bubble { margin-bottom: 15px; max-width: 85%; padding: 12px 16px; border-radius: 18px; font-size: 0.9rem; line-height: 1.4; animation: slideUp 0.3s ease; }
+        .ai-msg { background: white; color: #1e293b; border-bottom-left-radius: 2px; box-shadow: 2px 2px 10px rgba(0,0,0,0.05); }
+        .user-msg { background: #dcf8c6; margin-left: auto; border-bottom-right-radius: 2px; }
+        .skills-box { background: #fffce0; border: 1px dashed #f59e0b; padding: 10px; border-radius: 10px; font-size: 0.8rem; margin: 10px 0; }
+
+        /* COMMUNITY POST STYLES */
+        .post-card { background: white; padding: 15px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
+        .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .avatar { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        .post-img { width: 100%; border-radius: 10px; margin: 10px 0; display: block; max-height: 250px; object-fit: cover; }
+        .post-del { position: absolute; top: 15px; right: 15px; color: #ef4444; font-size: 0.75rem; cursor: pointer; border: 1px solid #fee2e2; padding: 2px 8px; border-radius: 5px; background: #fff1f1; }
+        
+        .post-actions { display: flex; gap: 15px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
+        .btn-act { border: none; background: none; font-size: 0.8rem; cursor: pointer; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+        .btn-act.liked { color: #ef4444; }
+
+        /* COMMENT BOX */
+        .comment-area { background: #f8fafc; padding: 10px; border-radius: 12px; margin-top: 10px; display: none; }
+        .cmt-item { font-size: 0.75rem; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 2px; }
+
+        /* FOOTER & NAV */
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 25px; border-top-right-radius: 25px; padding: 15px; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); }
+        .input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+        .cam-btn { cursor: pointer; font-size: 1.3rem; padding: 0 5px; }
+        input[type="text"] { flex: 1; padding: 12px; border: 1.5px solid #eee; border-radius: 12px; outline: none; background: #f8fafc; }
+        .btn-send { background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .nav-bar { display: flex; border-top: 1px solid #eee; padding-top: 8px; }
+        .nav-item { flex: 1; text-align: center; border: none; background: none; color: #94a3b8; font-size: 0.75rem; cursor: pointer; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="login-page">
+        <div class="login-card">
+            <h2 style="color: var(--primary); margin: 0;">Tofa AI</h2>
+            <p style="color: #64748b; font-size: 0.8rem; margin-bottom: 20px;">Wiki Assistant & Community</p>
+            <input type="text" id="username" placeholder="Siapa nama Anda?">
+            <button class="btn-send" style="width: 100%; margin-top: 10px;" onclick="login()">Buka Aplikasi</button>
+        </div>
+    </div>
+
+    <div id="main-app">
+        <header>
+            <span style="font-weight: bold; color: var(--primary);">Tofa AI ⚡</span>
+            <span id="user-info" style="font-size: 0.8rem; color: #64748b;"></span>
+        </header>
+
+        <div class="content-area" id="scroll-target">
+            <div id="page-ai" class="page active-page">
+                <div id="ai-chat" style="display: flex; flex-direction: column;">
+                    <div class="chat-bubble ai-msg">
+                        Halo! Saya <b>Tofa AI</b>. Senang bertemu denganmu!<br>
+                        <div class="skills-box">
+                            <b>💡 Keahlian Tofa AI:</b><br>
+                            • Artikel Detail (ketik "jelaskan tentang...")<br>
+                            • Pengetahuan Wiki (Bumi, Sejarah, Sains)<br>
+                            • Tips Belajar & Ngobrol Santai
+                        </div>
+                        Ada yang mau ditanyakan?
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-comm" class="page">
+                <div id="posts-container">
+                    <div class="post-card">
+                        <div class="post-header"><div class="avatar" style="background: #10b981;">A</div><b>Admin Tofa</b></div>
+                        <div>Fitur Hapus Postingan sudah kembali! Silakan posting, like, dan komen sepuasnya.</div>
+                        <div class="post-actions">
+                            <button class="btn-act" onclick="doLike(this)">❤️ <span class="n">24</span> Like</button>
+                            <button class="btn-act" onclick="toggleCmt(this)">💬 Komentar</button>
+                        </div>
+                        <div class="comment-area">
+                            <div class="cmt-list"></div>
+                            <input type="text" placeholder="Tulis balasan..." style="height:30px; font-size:0.7rem;" onkeypress="addCmt(event, this)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="input-row">
+                <label for="img-in" class="cam-btn" id="cam-icon" style="display:none;">📷</label>
+                <input type="file" id="img-in" hidden accept="image/*">
+                <input type="text" id="main-input" placeholder="Tanya Tofa AI...">
+                <button class="btn-send" onclick="processSend()">Kirim</button>
+            </div>
+            <div class="nav-bar">
+                <button class="nav-item active" onclick="switchTab('ai', this)">🤖 Tofa AI</button>
+                <button class="nav-item" onclick="switchTab('comm', this)">👥 Komunitas</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let me = "";
+        let currentTab = "ai";
+        const colors = ["#ef4444", "#3b82f6", "#8b5cf6", "#f59e0b", "#10b981"];
+
+        function login() {
+            const nameInp = document.getElementById('username').value;
+            if(!nameInp) return alert("Masukkan nama dulu ya!");
+            me = nameInp;
+            document.getElementById('user-info').innerText = "Hi, " + me;
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('main-app').style.display = 'flex';
+        }
+
+        function switchTab(t, btn) {
+            currentTab = t;
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-'+t).classList.add('active-page');
+            btn.classList.add('active');
+            
+            document.getElementById('cam-icon').style.display = (t === 'comm') ? 'block' : 'none';
+            document.getElementById('main-input').placeholder = (t === 'ai') ? "Tanya Tofa AI..." : "Ceritakan sesuatu...";
+        }
+
+        function processSend() {
+            const textInp = document.getElementById('main-input');
+            const fileInp = document.getElementById('img-in');
+            const val = textInp.value.trim();
+
+            if(currentTab === 'ai') {
+                if(!val) return;
+                handleAI(val);
+            } else {
+                if(!val && !fileInp.files[0]) return;
+                handlePost(val, fileInp.files[0]);
+                fileInp.value = "";
+            }
+            textInp.value = "";
+        }
+
+        function handleAI(val) {
+            const chat = document.getElementById('ai-chat');
+            chat.innerHTML += `<div class="chat-bubble user-msg">${val}</div>`;
+            
+            let reply = `Halo ${me}, Tofa AI masih mempelajari hal tersebut. Tanya yang lain?`;
+            const low = val.toLowerCase();
+
+            if(low.includes("artikel") || low.includes("jelaskan")) {
+                reply = `<div style="border-left:3px solid var(--accent); padding-left:10px; margin-top:5px;"><b>Ringkasan Wiki:</b><br>Topik ini merupakan bagian penting dalam sejarah perkembangan peradaban manusia.</div>`;
+            } else if(low.includes("siapa kamu")) {
+                reply = `Saya adalah Tofa AI, asisten pribadimu yang siap membantu kapan saja, ${me}!`;
+            } else if(low.includes("halo")) {
+                reply = `Halo ${me}! Apa yang bisa Tofa AI bantu hari ini?`;
+            }
+
+            setTimeout(() => {
+                chat.innerHTML += `<div class="chat-bubble ai-msg"><b>Tofa AI:</b> ${reply}</div>`;
+                document.getElementById('scroll-target').scrollTop = document.getElementById('scroll-target').scrollHeight;
+            }, 600);
+        }
+
+        function handlePost(txt, file) {
+            const container = document.getElementById('posts-container');
+            const col = colors[Math.floor(Math.random()*colors.length)];
+            const id = Date.now();
+
+            const renderPost = (imgBase64 = "") => {
+                let imgTag = imgBase64 ? `<img src="${imgBase64}" class="post-img">` : "";
+                const postHtml = `
+                    <div class="post-card" id="post-${id}">
+                        <button class="post-del" onclick="deletePost(${id})">Hapus</button>
+                        <div class="post-header">
+                            <div class="avatar" style="background:${col}">${me[0].toUpperCase()}</div>
+                            <b>${me}</b>
+                        </div>
+                        <div>${txt}</div>
+                        ${imgTag}
+                        <div class="post-actions">
+                            <button class="btn-act" onclick="doLike(this)">❤️ <span class="n">0</span> Like</button>
+                            <button class="btn-act" onclick="toggleCmt(this)">💬 Komentar</button>
+                        </div>
+                        <div class="comment-area">
+                            <div class="cmt-list"></div>
+                            <input type="text" placeholder="Balas..." style="height:30px; font-size:0.7rem;" onkeypress="addCmt(event, this)">
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('afterbegin', postHtml);
+            }
+
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => renderPost(e.target.result);
+                reader.readAsDataURL(file);
+            } else {
+                renderPost();
+            }
+        }
+
+        function deletePost(id) {
+            if(confirm("Hapus postingan ini?")) {
+                const target = document.getElementById('post-' + id);
+                if(target) target.remove();
+            }
+        }
+
+        function doLike(btn) {
+            btn.classList.toggle('liked');
+            let numSpan = btn.querySelector('.n');
+            let currentNum = parseInt(numSpan.innerText);
+            numSpan.innerText = btn.classList.contains('liked') ? currentNum + 1 : currentNum - 1;
+        }
+
+        function toggleCmt(btn) {
+            const area = btn.closest('.post-card').querySelector('.comment-area');
+            area.style.display = (area.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function addCmt(e, inp) {
+            if(e.key === 'Enter' && inp.value.trim()) {
+                const list = inp.previousElementSibling;
+                list.innerHTML += `<div class="cmt-item"><b>${me}:</b> ${inp.value}</div>`;
+                inp.value = "";
+            }
+        }
+    </script>
+</body>
+</html>
