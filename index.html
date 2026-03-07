@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>TOFA V23 | ULTIMATE NEURAL ENGINE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+    <style>
+        /* CSS MASTER CORE */
+        :root { 
+            --bg: #010409; --surf: #0d1117; --card: #161b22; 
+            --prim: #58a6ff; --acc: #bc8cff; --txt: #c9d1d9; 
+            --brd: #30363d; --danger: #f85149; --gold: #d29922;
+            --glass: rgba(13, 17, 23, 0.8);
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+        body, html { margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; }
+
+        /* ANIMATIONS */
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.5; } 100% { transform: scale(1.05); opacity: 1; } }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* LOADING SYSTEM */
+        #loader, #ai-thinking { position: fixed; inset: 0; background: var(--bg); z-index: 99999; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        #ai-thinking { background: rgba(1, 4, 9, 0.85); backdrop-filter: blur(8px); z-index: 5000; }
+        .pulse-orb { width: 80px; height: 80px; background: radial-gradient(circle, var(--prim), transparent); border-radius: 50%; animation: pulse 0.8s infinite alternate; box-shadow: 0 0 30px var(--prim); }
+        
+        /* LAYOUT COMPONENTS */
+        header { padding: 15px 20px; background: var(--glass); backdrop-filter: blur(20px); border-bottom: 1px solid var(--brd); display: flex; align-items: center; height: 80px; position: sticky; top: 0; z-index: 1000; }
+        .p-ava { width: 50px; height: 50px; border-radius: 15px; border: 2px solid var(--prim); object-fit: cover; background: #000; }
+        .xp-container { flex: 1; margin-left: 15px; }
+        .xp-bg { width: 100%; height: 8px; background: #000; border-radius: 10px; margin-top: 6px; overflow: hidden; border: 1px solid var(--brd); }
+        .xp-bar { height: 100%; background: linear-gradient(90deg, var(--prim), var(--acc)); width: 0%; transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        main { height: calc(100vh - 160px); overflow-y: auto; padding: 15px; padding-bottom: 120px; }
+        .section { display: none; animation: slideUp 0.5s ease; } 
+        .section.active { display: block; }
+
+        /* BUBBLES */
+        .bubble { padding: 14px 18px; border-radius: 22px; font-size: 14.5px; max-width: 85%; line-height: 1.5; margin-bottom: 15px; position: relative; word-wrap: break-word; }
+        .ai { background: var(--card); border: 1px solid var(--brd); align-self: flex-start; border-bottom-left-radius: 4px; color: #eee; }
+        .me { background: var(--prim); color: #000; align-self: flex-end; border-bottom-right-radius: 4px; margin-left: auto; font-weight: 600; }
+        .stk-img { width: 120px; height: 120px; display: block; margin: 5px 0; border-radius: 10px; }
+        .emoji-big { font-size: 40px; }
+
+        /* QUICK ACTION BUTTONS */
+        .quick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .q-btn { background: var(--card); border: 1px solid var(--brd); padding: 15px; border-radius: 18px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.3s; }
+        .q-btn:active { transform: scale(0.95); background: var(--surf); }
+        .q-icon { font-size: 20px; background: var(--surf); padding: 8px; border-radius: 10px; }
+
+        /* ATTACHMENT PANEL (STICKER & EMOJI) */
+        #attach-panel { display: none; position: absolute; bottom: 90px; left: 15px; right: 15px; background: var(--card); border: 1px solid var(--brd); border-radius: 25px; padding: 15px; z-index: 2000; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .attach-tabs { display: flex; gap: 15px; border-bottom: 1px solid var(--brd); margin-bottom: 10px; padding-bottom: 10px; }
+        .tab-btn { color: #8b949e; font-weight: 800; cursor: pointer; font-size: 13px; }
+        .tab-btn.active { color: var(--prim); border-bottom: 2px solid var(--prim); }
+        .attach-content { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 200px; overflow-y: auto; }
+        .stk-item { width: 100%; aspect-ratio: 1; object-fit: contain; cursor: pointer; border-radius: 10px; }
+        .emo-item { font-size: 28px; text-align: center; cursor: pointer; padding: 5px; }
+
+        /* MUSIC PLAYER WIDGET */
+        .music-card { background: linear-gradient(135deg, #161b22, #0d1117); border: 1px solid var(--brd); border-radius: 20px; padding: 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
+        .m-disc { width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--acc); animation: rotate 4s linear infinite; animation-play-state: paused; }
+        .m-disc.playing { animation-play-state: running; }
+
+        /* FORM ELEMENTS */
+        .in-box { width: 100%; background: var(--surf); border: 1px solid var(--brd); padding: 16px; border-radius: 18px; color: #fff; margin-bottom: 15px; font-family: inherit; font-size: 14px; outline: none; transition: 0.3s; }
+        .in-box:focus { border-color: var(--prim); box-shadow: 0 0 10px rgba(88, 166, 255, 0.2); }
+        .btn-main { width: 100%; padding: 16px; border-radius: 18px; background: var(--prim); color: #000; border: none; font-weight: 800; font-size: 15px; cursor: pointer; transition: 0.3s; }
+        .btn-main:active { transform: scale(0.98); }
+
+        /* DOCK NAVIGATION */
+        .dock { position: fixed; bottom: 0; width: 100%; background: var(--glass); backdrop-filter: blur(20px); border-top: 1px solid var(--brd); padding: 12px 15px 30px; z-index: 1000; }
+        .input-row { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+        .btn-icon { background: none; border: none; font-size: 24px; cursor: pointer; padding: 0; }
+        nav { display: flex; justify-content: space-around; }
+        .nav-item { text-align: center; color: #8b949e; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.3s; }
+        .nav-item i { font-size: 22px; display: block; margin-bottom: 4px; }
+        .nav-item.active { color: var(--prim); transform: translateY(-5px); }
+
+        /* BADGES */
+        .badge-god { background: linear-gradient(45deg, var(--gold), #ffeead); color: #000; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 900; box-shadow: 0 0 10px var(--gold); }
+        
+        /* DEV MENU */
+        #dev-menu { display: none; background: #222; border: 1px dashed var(--gold); padding: 15px; border-radius: 15px; margin-top: 20px; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<div id="loader"><div class="pulse-orb"></div><h2 style="letter-spacing:5px; margin-top:30px;">V23 BOOTING...</h2></div>
+<div id="ai-thinking"><div class="pulse-orb" style="box-shadow: 0 0 30px var(--acc);"></div><p style="margin-top:20px; color:var(--acc); font-weight:800;">NEURAL PROCESSING...</p></div>
+
+<div id="auth-gate">
+    <div style="padding:40px 25px; text-align:center; animation: fadeIn 1s ease;">
+        <h1 style="color:var(--prim); letter-spacing:8px; font-weight:900; font-size:32px;">TOFA AI</h1>
+        <p style="color:#8b949e; margin-bottom:40px;">Ultimate Social Neural Network</p>
+        <div style="display:flex; background:var(--card); padding:5px; border-radius:15px; margin-bottom:25px; border:1px solid var(--brd);">
+            <button id="tl" style="flex:1; padding:12px; border-radius:12px; border:none; background:var(--prim); font-weight:800;" onclick="ui.setAuth('login')">LOGIN</button>
+            <button id="ts" style="flex:1; padding:12px; border-radius:12px; border:none; background:transparent; color:#fff;" onclick="ui.setAuth('signup')">SIGNUP</button>
+        </div>
+        <input id="au" class="in-box" placeholder="Neural ID (Username)">
+        <input id="ap" type="password" class="in-box" placeholder="Access Key (Password)">
+        <button onclick="core.auth()" class="btn-main">INITIALIZE LINK</button>
+    </div>
+</div>
+
+<header id="h-main" style="display:none;">
+    <img id="u-ava" src="https://via.placeholder.com/50" class="p-ava" onclick="ui.nav('settings', document.querySelector('.ni-set'))">
+    <div class="xp-container">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; font-weight:800;"><span id="u-name">...</span> <span id="u-role-badge"></span></span>
+            <span style="font-size:11px; color:var(--gold); font-weight:800;">LVL <span id="u-lvl">1</span></span>
+        </div>
+        <div class="xp-bg"><div id="u-xp-bar" class="xp-bar"></div></div>
+    </div>
+</header>
+
+<main id="viewport" style="display:none;">
+    
+    <div id="s-ai" class="section active">
+        <div class="quick-grid">
+            <div class="q-btn" onclick="core.handleSend('Ceritakan lelucon')">
+                <span class="q-icon">🤣</span>
+                <div><b>Joke</b><br><small style="font-size:9px;">Hiburan AI</small></div>
+            </div>
+            <div class="q-btn" onclick="core.handleSend('Main Tebak Angka')">
+                <span class="q-icon">🎮</span>
+                <div><b>Game</b><br><small style="font-size:9px;">Neural Play</small></div>
+            </div>
+            <div class="q-btn" onclick="core.handleSend('Siapa Mustofa?')">
+                <span class="q-icon">👑</span>
+                <div><b>Creator</b><br><small style="font-size:9px;">The God</small></div>
+            </div>
+            <div class="q-btn" onclick="core.handleSend('Quote hari ini')">
+                <span class="q-icon">💡</span>
+                <div><b>Quote</b><br><small style="font-size:9px;">Motivasi</small></div>
+            </div>
+        </div>
+        <div id="chat-container" style="display:flex; flex-direction:column;"></div>
+    </div>
+
+    <div id="s-feed" class="section">
+        <div style="background:var(--card); border:1px solid var(--brd); border-radius:25px; padding:20px; margin-bottom:25px;">
+            <textarea id="f-msg" class="in-box" style="height:100px; resize:none;" placeholder="Apa yang ada di pikiranmu, Master?"></textarea>
+            <input id="f-img" class="in-box" placeholder="URL Gambar (Opsional)">
+            <button onclick="core.post()" class="btn-main">POST TO CLOUD</button>
+        </div>
+        <div id="f-list"></div>
+    </div>
+
+    <div id="s-dm" class="section">
+        <h3 style="margin-left:5px; color:var(--prim);">DIRECT MESSAGES</h3>
+        <div id="member-list" style="display:grid; gap:12px;"></div>
+    </div>
+
+    <div id="s-settings" class="section">
+        <div class="music-card">
+            <div id="m-disc" class="m-disc" style="background: url('https://i.ibb.co/vz6mS8X/dev.png') center/cover;"></div>
+            <div style="flex:1;">
+                <b id="m-title">Neural Beats v1</b><br>
+                <small id="m-artist">Tofa AI Original</small>
+                <div style="display:flex; gap:15px; margin-top:10px;">
+                    <button onclick="core.playMusic()" style="background:none; border:none; color:var(--prim); font-size:20px; cursor:pointer;">▶️</button>
+                    <button onclick="core.stopMusic()" style="background:none; border:none; color:var(--danger); font-size:20px; cursor:pointer;">⏹️</button>
+                </div>
+            </div>
+        </div>
+
+        <div style="background:var(--card); border:1px solid var(--brd); border-radius:25px; padding:25px;">
+            <h3 style="margin-top:0;">NEURAL PROFILE</h3>
+            <label style="font-size:11px; color:#8b949e;">AVATAR URL</label>
+            <input id="set-ava" class="in-box" placeholder="https://...">
+            <label style="font-size:11px; color:#8b949e;">BIO STATUS</label>
+            <input id="set-bio" class="in-box" placeholder="I'm a GOD...">
+            <button onclick="core.saveProfile()" class="btn-main" style="background:var(--acc);">SYNC CHANGES</button>
+            <button onclick="core.logout()" style="width:100%; margin-top:15px; background:none; color:var(--danger); border:1px solid var(--danger); padding:12px; border-radius:15px; font-weight:800;">TERMINATE SESSION</button>
+            
+            <div id="dev-menu">
+                <h4 style="color:var(--gold); margin:0 0 10px 0;">DEVELOPER CONSOLE</h4>
+                <p id="dev-stats" style="font-size:10px;"></p>
+                <button onclick="core.addXp(50)" style="font-size:10px; padding:5px;">Cheat +50 XP</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div id="attach-panel">
+    <div class="attach-tabs">
+        <span id="tab-stk" class="tab-btn active" onclick="ui.toggleAttachTab('stk')">STICKERS</span>
+        <span id="tab-emo" class="tab-btn" onclick="ui.toggleAttachTab('emo')">EMOJIS</span>
+    </div>
+    <div id="content-stk" class="attach-content">
+        <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHIwdHh6Z3RyejR6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1z/3o7TKMGpxNfQC7905y/giphy.gif" class="stk-item" onclick="core.sendAttach('stk', this.src)">
+        <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHR1emE1ZnR6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1z/l41lTfuxV5R1zkLGo/giphy.gif" class="stk-item" onclick="core.sendAttach('stk', this.src)">
+        <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHRyejR6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1z/3o7TKVUn7iM8FMEU24/giphy.gif" class="stk-item" onclick="core.sendAttach('stk', this.src)">
+        <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHRyejR6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6eGZ6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1z/l0HlS0mO6S9E5Emsw/giphy.gif" class="stk-item" onclick="core.sendAttach('stk', this.src)">
+    </div>
+    <div id="content-emo" class="attach-content" style="display:none;">
+        <span class="emo-item" onclick="core.sendAttach('emo', '🔥')">🔥</span>
+        <span class="emo-item" onclick="core.sendAttach('emo', '👑')">👑</span>
+        <span class="emo-item" onclick="core.sendAttach('emo', '⚡')">⚡</span>
+        <span class="emo-item" onclick="core.sendAttach('emo', '❤️')">❤️</span>
+        <span class="emo-item" onclick="core.sendAttach('emo', '😂')">😂</span>
+        <span class="emo-item" onclick="core.sendAttach('emo', '🤖')">🤖</span>
+        <span class="emo-item" onclick="core.sendAttach('emo', '🚀')">🚀</span>
+        <span class="emo-item" onclick="core.sendAttach('emo', '🎮')">🎮</span>
+    </div>
+</div>
+
+<div id="d-main" class="dock" style="display:none;">
+    <div id="ai-input" class="input-row">
+        <button class="btn-icon" onclick="ui.toggleAttach()">😊</button>
+        <input id="ci" class="in-box" style="margin:0; border-radius:30px;" placeholder="Send neural command..." onkeypress="if(event.key==='Enter')core.handleSend()">
+        <button onclick="core.handleSend()" style="background:var(--prim); border:none; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center;">🚀</button>
+    </div>
+    <nav>
+        <div class="nav-item active" onclick="ui.nav('ai', this)"><i>🧠</i>AI</div>
+        <div class="nav-item" onclick="ui.nav('feed', this)"><i>📡</i>FEED</div>
+        <div class="nav-item" onclick="ui.nav('dm', this)"><i>📩</i>INBOX</div>
+        <div class="nav-item ni-set" onclick="ui.nav('settings', this)"><i>⚙️</i>CORE</div>
+    </nav>
+</div>
+
+<audio id="bg-music" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+
+<script>
+/* TOFA CORE ENGINE V23 
+   CREATED BY MUSTOFA (15 Y.O GOD)
+*/
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDi8pUKnxBmqESeKsVY7p-qfciucJojFs8",
+  authDomain: "tofa-ai.firebaseapp.com",
+  projectId: "tofa-ai",
+  databaseURL: "https://tofa-ai-default-rtdb.asia-southeast1.firebasedatabase.app/"
+};
+
+firebase.initializeApp(firebaseConfig);
+const fdb = firebase.database();
+let curUser = localStorage.getItem('tofa_cur'), authMode = 'login', userLvl = 1, userXp = 0, isGod = false;
+
+const core = {
+    auth: () => {
+        const u = document.getElementById('au').value.toLowerCase().trim();
+        const p = document.getElementById('ap').value;
+        if(!u || !p) return alert("System requires ID & Key!");
+        document.getElementById('loader').style.display = 'flex';
+        
+        setTimeout(() => {
+            fdb.ref('users/'+u).once('value', s => {
+                const d = s.val();
+                if(authMode === 'login') {
+                    if(d && d.pass === p) { localStorage.setItem('tofa_cur', u); location.reload(); }
+                    else { document.getElementById('loader').style.display='none'; alert("Access Denied!"); }
+                } else {
+                    if(d) { document.getElementById('loader').style.display='none'; return alert("ID Taken!"); }
+                    fdb.ref('users/'+u).set({
+                        pass: p, role: (u === 'mustofa' ? 'GOD' : 'USER'), 
+                        lvl: 1, xp: 0, bio: 'Neural Member', 
+                        ava: 'https://i.ibb.co/vz6mS8X/dev.png'
+                    }).then(() => { localStorage.setItem('tofa_cur', u); location.reload(); });
+                }
+            });
+        }, 3000);
+    },
+
+    handleSend: (v) => {
+        const val = v || document.getElementById('ci').value; if(!val) return;
+        ui.bubble('me', val); core.ai(val); document.getElementById('ci').value = "";
+        document.getElementById('attach-panel').style.display = 'none';
+    },
+
+    sendAttach: (type, content) => {
+        if(type === 'stk') ui.bubble('me', `<img src="${content}" class="stk-img">`, true);
+        else ui.bubble('me', `<span class="emoji-big">${content}</span>`, true);
+        document.getElementById('attach-panel').style.display = 'none';
+        core.ai(`Kirim ${type}`);
+    },
+
+    ai: (msg) => {
+        document.getElementById('ai-thinking').style.display = 'flex';
+        const m = msg.toLowerCase();
+        
+        setTimeout(() => {
+            document.getElementById('ai-thinking').style.display = 'none';
+            let r = "";
+            
+            // LOGIC ENGINE V23
+            if(m.includes("joke") || m.includes("lelucon")) {
+                const jokes = [
+                    "Kenapa komputer sering kedinginan? Karena dia punya banyak windows terbuka!",
+                    "Apa bedanya programmer sama pesulap? Pesulap narik kelinci dari topi, programmer narik 'bug' dari kode yang udah jalan.",
+                    "Kenapa keyboard sering stres? Karena dia punya banyak 'escape' tapi nggak bisa keluar."
+                ];
+                r = jokes[Math.floor(Math.random()*jokes.length)];
+            } else if(m.includes("game") || m.includes("tebak")) {
+                r = "Oke, saya sudah memikirkan angka dari 1 sampai 100. Tebak angka berapa? (Jawab dengan angka saja)";
+            } else if(m.includes("mustofa")) {
+                r = "Master Mustofa adalah pencipta saya yang berusia 15 tahun. Dia adalah GOD di sistem ini. Salam hormat!";
+            } else if(m.includes("siapa kamu")) {
+                r = "Saya adalah TOFA V23, sistem kecerdasan buatan paling canggih hasil kreasi Mustofa.";
+            } else if(m.includes("stk") || m.includes("stiker")) {
+                r = "Stiker yang sangat ekspresif, Master! Sistem saya menyukainya.";
+            } else if(m.includes("quote")) {
+                r = "Pikiran adalah segalanya. Apa yang kamu pikirkan, itulah yang akan terjadi. Semangat, Master!";
+            } else if(m.includes("halo") || m === "p") {
+                r = `Halo ${curUser}! Neural link stabil. Ada yang bisa saya bantu di sistem V23 ini?`;
+            } else if(m.includes("dm") || m.includes("inbox")) {
+                r = "Menu Inbox ada di tombol bawah Master. Di sana Master bisa melihat user lain di jaringan ini.";
+            } else {
+                r = "Saya mengerti maksud Master. Database saya mencatat ini sebagai input berharga untuk update selanjutnya.";
+            }
+            
+            ui.type(r);
+            core.addXp(12);
+        }, 3000);
+    },
+
+    addXp: (amt) => {
+        userXp += amt;
+        if(userXp >= 100) { userLvl++; userXp = 0; alert("NEURAL EVOLUTION: LEVEL UP TO " + userLvl); }
+        fdb.ref('users/'+curUser).update({ xp: userXp, lvl: userLvl });
+    },
+
+    post: () => {
+        const txt = document.getElementById('f-msg').value;
+        const img = document.getElementById('f-img').value;
+        if(!txt) return;
+        fdb.ref('posts').push({ u: curUser, txt, img, ts: Date.now() });
+        document.getElementById('f-msg').value = ""; document.getElementById('f-img').value = "";
+        core.addXp(25);
+    },
+
+    saveProfile: () => {
+        const ava = document.getElementById('set-ava').value;
+        const bio = document.getElementById('set-bio').value;
+        fdb.ref('users/'+curUser).update({ava, bio}).then(() => alert("Neural Data Synced!"));
+    },
+
+    playMusic: () => { 
+        document.getElementById('bg-music').play(); 
+        document.getElementById('m-disc').classList.add('playing');
+    },
+    stopMusic: () => { 
+        document.getElementById('bg-music').pause(); 
+        document.getElementById('m-disc').classList.remove('playing');
+    },
+    logout: () => { localStorage.removeItem('tofa_cur'); location.reload(); }
+};
+
+const ui = {
+    setAuth: (m) => {
+        authMode = m;
+        document.getElementById('tl').style.background = (m==='login'?'var(--prim)':'transparent');
+        document.getElementById('ts').style.background = (m==='signup'?'var(--prim)':'transparent');
+    },
+    nav: (s, el) => {
+        document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
+        document.getElementById('s-'+s).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('ai-input').style.display = (s==='ai'?'flex':'none');
+        document.getElementById('attach-panel').style.display = 'none';
+    },
+    toggleAttach: () => {
+        const p = document.getElementById('attach-panel');
+        p.style.display = (p.style.display === 'block' ? 'none' : 'block');
+    },
+    toggleAttachTab: (t) => {
+        document.getElementById('content-stk').style.display = (t==='stk'?'grid':'none');
+        document.getElementById('content-emo').style.display = (t==='emo'?'grid':'none');
+        document.getElementById('tab-stk').classList.toggle('active', t==='stk');
+        document.getElementById('tab-emo').classList.toggle('active', t==='emo');
+    },
+    bubble: (t, m, html) => {
+        const d = document.createElement('div'); d.className = `bubble ${t}`;
+        if(html) d.innerHTML = m; else d.innerText = m;
+        document.getElementById('chat-container').appendChild(d);
+        document.getElementById('viewport').scrollTop = 99999;
+    },
+    type: (m) => {
+        const d = document.createElement('div'); d.className = 'bubble ai';
+        document.getElementById('chat-container').appendChild(d);
+        let i = 0; const t = setInterval(() => {
+            if(i < m.length) { d.innerHTML += m.charAt(i); i++; }
+            else clearInterval(t);
+            document.getElementById('viewport').scrollTop = 99999;
+        }, 25);
+    }
+};
+
+window.onload = () => {
+    if(curUser) {
+        document.getElementById('auth-gate').style.display='none';
+        document.getElementById('h-main').style.display='flex';
+        document.getElementById('viewport').style.display='block';
+        document.getElementById('d-main').style.display='block';
+        
+        fdb.ref('users/'+curUser).on('value', s => {
+            const d = s.val(); if(!d) return;
+            userLvl = d.lvl || 1; userXp = d.xp || 0;
+            isGod = (d.role === 'GOD');
+            document.getElementById('u-name').innerText = curUser.toUpperCase();
+            document.getElementById('u-ava').src = d.ava;
+            document.getElementById('u-lvl').innerText = userLvl;
+            document.getElementById('u-xp-bar').style.width = userXp + "%";
+            document.getElementById('u-role-badge').innerText = d.role;
+            if(isGod) {
+                document.getElementById('u-role-badge').className = 'badge-god';
+                document.getElementById('dev-menu').style.display = 'block';
+                document.getElementById('dev-stats').innerText = `NODE: ${curUser} | VERSION: 23.0.1 | ROLE: GOD`;
+            }
+        });
+
+        fdb.ref('posts').on('value', s => {
+            const list = document.getElementById('f-list'); list.innerHTML = "";
+            if(s.exists()) Object.keys(s.val()).reverse().forEach(k => {
+                const p = s.val()[k];
+                list.innerHTML += `<div style="background:var(--card); border:1px solid var(--brd); border-radius:20px; padding:18px; margin-bottom:15px;">
+                    <b style="color:var(--prim)">@${p.u.toUpperCase()}</b>
+                    <p style="margin:10px 0;">${p.txt}</p>
+                    ${p.img ? `<img src="${p.img}" style="width:100%; border-radius:12px; margin-top:10px;">` : ''}
+                </div>`;
+            });
+        });
+
+        fdb.ref('users').on('value', s => {
+            const ml = document.getElementById('member-list'); ml.innerHTML = "";
+            Object.keys(s.val()).forEach(u => {
+                if(u === curUser) return;
+                const ud = s.val()[u];
+                ml.innerHTML += `<div style="background:var(--card); border:1px solid var(--brd); padding:15px; border-radius:18px; display:flex; align-items:center; gap:12px;" onclick="core.handleSend('Kirim pesan ke ${u}')">
+                    <img src="${ud.ava}" style="width:40px; height:40px; border-radius:10px; border:1px solid var(--brd);">
+                    <div><b>${u.toUpperCase()}</b><br><small style="color:#8b949e">LVL ${ud.lvl} | ${ud.bio}</small></div>
+                </div>`;
+            });
+        });
+
+        ui.type(`Sistem V23 Ultimate Online. Selamat datang kembali, Master Mustofa.`);
+    }
+};
+</script>
+</body>
+</html>
